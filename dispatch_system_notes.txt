@@ -1,0 +1,27 @@
+System Overview
+
+Aurora Freight Systems operates a fictional dispatch application called RouteMaster, used internally by dispatchers to assign delivery routes to drivers. RouteMaster started as a 32-bit desktop application written in C++ over a decade ago. As the fleet grew past a few hundred vehicles, memory limits on the 32-bit build began causing crashes during peak dispatch hours, prompting a project to move the application to a 64-bit build.
+
+Build Toolchain Notes
+
+The original RouteMaster build relied on a handful of third-party routing-optimization libraries that were only ever compiled as 32-bit binaries. Because of this, the original 32-bit build does NOT support loading more than roughly two million address points into memory at once without running out of addressable space. This limit was the direct trigger for the migration project, since Aurora's delivery network had grown well past that point.
+
+Address Space After Migration
+
+Once the migration to a 64-bit build was completed, RouteMaster supports loading both small regional address datasets and the full multi-million-point national address dataset in memory simultaneously, without the earlier crashes. Engineers achieved this by replacing several fixed-size internal buffers with dynamically sized containers, and by auditing every place in the codebase that had assumed a memory address could fit inside a 32-bit integer.
+
+Database Layer
+
+RouteMaster stores route assignments in a relational database accessed through an ODBC connection. The database schema itself required no changes during the migration. A 64-bit ODBC driver had to be installed alongside the existing 32-bit driver, since a handful of older reporting scripts used by the operations team still ran in 32-bit mode during the transition period.
+
+AI-Assisted Code Review
+
+During the migration, engineers used an AI coding assistant to scan the codebase for places where a memory address had been cast directly into a 32-bit integer type, a common source of subtle bugs when moving from 32-bit to 64-bit. The assistant was able to flag a large number of candidate locations quickly, but every flagged location still needed a human engineer to confirm whether the cast was actually unsafe, since the assistant had no way to reliably understand the surrounding business logic.
+
+Testing Strategy
+
+The test plan ran the full route-assignment regression suite on both the 32-bit and 64-bit builds in parallel, comparing the generated routes line by line. A small number of differences turned out to be floating-point rounding differences in distance calculations rather than actual routing errors. A separate load test specifically targeted the national address dataset scenario, since that was the exact condition that had caused crashes in the old 32-bit build.
+
+Rollback Plan
+
+Because the 32-bit build remained functional throughout the project, the rollback plan was simply to redeploy the last known-good 32-bit release if the 64-bit build failed validation. This added some maintenance overhead during the transition but kept deployment risk low.
