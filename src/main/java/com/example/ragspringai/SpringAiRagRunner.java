@@ -54,17 +54,9 @@ public class SpringAiRagRunner {
                 System.out.println("[len=" + d.getText().length() + "] " + d.getText().replace("\n", " \\n "));
             }
  
-            // 3. Embed + store -- ONE line. Compare against your naive pipeline's
-            //    explicit embed() HTTP call plus hand-written INSERT ... ::vector SQL.
-            //
-            // NOTE: VectorStore has no automatic "clear before insert" behavior --
-            // the abstraction does NOT protect you from duplicate-chunk accumulation
-            // on rerun. You hit this for real: 2 rows in vector_store_spring_ai after
-            // 2 runs, for what should be 1 unique chunk. Truncate first for a clean
-            // run, same discipline your naive pipeline already had -- reaching past
-            // the abstraction here on purpose, since VectorStore's own delete API
-            // needs IDs or a filter expression we don't have a reliable version-
-            // matched signature for.
+            // 3. Embed + store: one-line vector-store add.
+            // This app clears the PgVector table before each run to avoid duplicate rows,
+            // because VectorStore does not automatically deduplicate on rerun.
             jdbcTemplate.execute("TRUNCATE TABLE vector_store_spring_ai");
             vectorStore.add(chunks);
             System.out.println("\n=== stored " + chunks.size() + " chunks via VectorStore.add() ===");
