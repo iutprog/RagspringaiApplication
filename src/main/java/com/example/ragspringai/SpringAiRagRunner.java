@@ -41,7 +41,7 @@ public class SpringAiRagRunner {
     CommandLineRunner runSpringAiRag(VectorStore vectorStore, ChatModel chatModel, JdbcTemplate jdbcTemplate) {
         return args -> {
             // 1. Load the SAME document as the naive pipeline -- fair comparison.
-            String text = Files.readString(Path.of("dispatch_system_notes.txt"));
+            String text = Files.readString(Path.of("aurora_freight_64bit_migration_notes.txt"));
             Document sourceDocument = new Document(text);
  
             // 2. Chunk -- Spring AI's token-aware splitter, NOT naive fixed-character
@@ -57,7 +57,7 @@ public class SpringAiRagRunner {
             // 3. Embed + store: one-line vector-store add.
             // This app clears the PgVector table before each run to avoid duplicate rows,
             // because VectorStore does not automatically deduplicate on rerun.
-            jdbcTemplate.execute("TRUNCATE TABLE vector_store_spring_ai");
+            jdbcTemplate.execute("TRUNCATE TABLE flagship_migration_notes");
             vectorStore.add(chunks);
             System.out.println("\n=== stored " + chunks.size() + " chunks via VectorStore.add() ===");
  
@@ -65,7 +65,7 @@ public class SpringAiRagRunner {
             //    embed() call plus hand-written SELECT ... <=> ... SQL. Notice what
             //    is NOT exposed here that your raw SQL version showed you directly:
             //    no per-result distance score by default.
-            String question = "Does the migrated build support loading the full national address dataset?";
+            String question = "What does the migration notes say about the Route Optimizer module's risk assessment?";
             List<Document> retrieved = vectorStore.similaritySearch(
                     SearchRequest.builder().query(question).topK(3).build());
  
