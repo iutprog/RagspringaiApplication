@@ -1,0 +1,34 @@
+Aurora Freight Systems -- RouteMaster Dispatch Engine
+64-bit Migration Notes (internal engineering record)
+
+Background
+
+RouteMaster's dispatch engine was originally written as a 32-bit application. As Aurora Freight's fleet and depot network grew, memory pressure on the 32-bit build began causing periodic crashes during peak dispatch hours. The engineering team undertook a project to move the core dispatch engine to a 64-bit build while keeping the legacy 32-bit build available for older depot terminals during a transition period.
+
+Handle Table Concerns
+
+The dispatch engine has historically represented live RouteRecord objects to external callers (the UI layer, reporting scripts, and older depot terminals) as plain integer "handles" rather than real pointers, because handles are easier to log and to pass across the terminal protocol boundary. Several places in the codebase convert a RouteRecord pointer directly into a 32-bit integer to produce these handles. On the 32-bit build this was harmless, since a pointer and a 32-bit integer occupy the same number of bits. On the 64-bit build, any integer type narrower than a full pointer can silently lose the upper bits of the address, which is exactly the kind of defect the migration review needed to catch.
+
+Depot Terminal Protocol
+
+Older depot terminals communicate using a legacy binary packet format with fixed-size integer fields, including a 16-bit field that was never intended to hold anything more than a small sanity-check fragment of an address. Newer terminals, added specifically as part of the migration project, use a full 64-bit field instead and can therefore carry a complete, unambiguous reference back to a specific in-memory record.
+
+Platform Notes
+
+Not every integer type behaves the same way across build targets. On the Linux-based build servers used for the primary 64-bit build, the `long` type is 64 bits wide. Windows-based tooling used by some depot integrators still treats `long` as only 32 bits wide even in a 64-bit build, which matters for any code that was assumed to be "fixed" simply because it compiles on 64-bit Linux.
+
+Route Optimizer Review
+
+The route optimization module was initially assessed by the migration team as low-risk, on the grounds that it does not obviously store or serialize pointers anywhere. That assessment was based on a quick read of the module's public interface rather than a full audit of its internals, including any pointer arithmetic used for internal bookkeeping.
+
+AI-Assisted Code Review
+
+During the migration, engineers used an AI coding assistant to scan the codebase for integer types that might be too narrow to safely hold a memory address. The assistant surfaced a useful first pass of candidate locations quickly, but it flagged some idiomatic, already-correct conversions (such as ones using the standard pointer-sized integer types from `<cstdint>`) as if they were equally suspicious, and it had no way to independently verify claims made about which modules were "obviously" safe without pointer involvement. Every flagged location, and every module marked as low-risk, still needed a human engineer familiar with the codebase's actual behavior to confirm.
+
+Testing Strategy
+
+The migration test plan ran the full route-assignment regression suite against both the 32-bit and 64-bit builds and compared results line by line. Diagnostic logging added during the migration, intended only for one-time cutover testing, was left in place longer than planned in a few modules and is scheduled for removal in a later cleanup pass.
+
+Rollback Plan
+
+Because the 32-bit build remained in production throughout the migration, the rollback plan was to keep routing older depot terminals to the 32-bit build if the 64-bit build failed validation, while newer terminals continued operating against the 64-bit build regardless.
