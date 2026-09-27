@@ -164,4 +164,41 @@ public class OllamaAgentLoop {
         mcpIn.flush();
 }
 
+static String callMcpTool(String toolName, JSONObject arguments) throws IOException {
+    int id = nextId++;
+    JSONObject request = new JSONObject()
+            .put("jsonrpc", "2.0")
+            .put("id", id)
+            .put("method", "tools/call")
+            .put("params", new JSONObject().put("name", toolName).put("arguments", arguments));
+
+    // TODO: write request.toString() + "\n" to mcpIn, flush
+        mcpIn.write(request.toString());
+        mcpIn.newLine();
+        mcpIn.flush();
+    // TODO: read one line back from mcpOut, parse as JSONObject
+        String responseLine = mcpOut.readLine();
+        if (responseLine == null) {
+            return "MCP server closed its output before returning a tool response.";
+        }
+        JSONObject response = new JSONObject(responseLine);
+        
+    // TODO: if it has "result" -> pull result.content[0].text and return it
+    //       if it has "error" instead -> return something describing the error
+        if (response.has("result")) {
+            JSONObject result = response.getJSONObject("result");
+            JSONArray content = result.optJSONArray("content");
+            if (content != null && !content.isEmpty()) {
+                return content.getJSONObject(0).optString("text", result.toString());
+            }
+            return result.toString();
+        }
+        if (response.has("error")) {
+            JSONObject error = response.getJSONObject("error");
+            return "MCP error " + error.optInt("code", 0) + ": "
+                    + error.optString("message", "Unknown error");
+        }
+        return "Unexpected MCP response: " + response;
+}
+
 }
