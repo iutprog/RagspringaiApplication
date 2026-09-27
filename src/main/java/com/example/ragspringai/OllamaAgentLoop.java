@@ -59,10 +59,11 @@ public class OllamaAgentLoop {
 
         // Step 1: state. This list is the entire memory of the agent.
         List<Object> messages = new ArrayList<>();
-        messages.add(new JSONObject().put("role", "user").put("content", "What time is it right now?"));
-
+        messages.add(new JSONObject().put("role", "user").put("content",
+                "Scan src/main/resources/data/RouteHandleTable.cpp for suspicious casts and tell me what you find."));
         // The one tool this agent is allowed to use.
-        JSONArray tools = new JSONArray().put(new JSONObject()
+        JSONArray tools = new JSONArray()
+        .put(new JSONObject()
                 .put("type", "function")
                 .put("function", new JSONObject()
                         .put("name", "get_current_time")
@@ -70,7 +71,19 @@ public class OllamaAgentLoop {
                         .put("parameters", new JSONObject()
                                 .put("type", "object")
                                 .put("properties", new JSONObject())
-                                .put("required", new JSONArray()))));
+                                .put("required", new JSONArray()))))
+        .put(new JSONObject()
+                .put("type", "function")
+                .put("function", new JSONObject()
+                        .put("name", "CppCastScanner")
+                        .put("description", "Scans a C++ source file for suspicious pointer-to-narrow-integer casts. Read-only — reports findings, does not modify the file.")
+                        .put("parameters", new JSONObject()
+                                .put("type", "object")
+                                .put("properties", new JSONObject()
+                                        .put("filePath", new JSONObject()
+                                                .put("type", "string")
+                                                .put("description", "Path to the .cpp file to scan")))
+                                .put("required", new JSONArray().put("filePath")))));
 
         for (int step = 1; step <= MAX_STEPS; step++) {
             System.out.println("--- step " + step + " ---");
@@ -91,7 +104,7 @@ public class OllamaAgentLoop {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             // Uncomment while debugging to see the raw shape Ollama actually returns:
-            // System.out.println(response.body());
+            // System.out.println("Raw Ollama response: " + response.body());
 
             JSONObject responseJson = new JSONObject(response.body());
             JSONObject message = responseJson.getJSONObject("message");
@@ -108,9 +121,10 @@ public class OllamaAgentLoop {
                 for (int i = 0; i < toolCalls.length(); i++) {
                     JSONObject call = toolCalls.getJSONObject(i);
                     String toolName = call.getJSONObject("function").getString("name");
+                    JSONObject arguments = call.getJSONObject("function").getJSONObject("arguments");
 
                     // Step 4: YOUR code executes the tool. The model cannot do this itself.
-                    String result = ""; // executeTool(toolName);
+                    String result = callMcpTool(toolName, arguments);
                     System.out.println("executed tool: " + toolName + " -> " + result);
 
                     // Step 5: feed the observation back in.
