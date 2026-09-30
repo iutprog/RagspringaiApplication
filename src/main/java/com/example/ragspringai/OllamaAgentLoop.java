@@ -138,7 +138,7 @@ public class OllamaAgentLoop {
 
                     // Step 4: YOUR code executes the tool. The model cannot do this itself.
                     String result = callMcpTool(toolName, arguments);
-                    System.out.println("executed tool: " + toolName + " " + arguments + " -> " + result);
+                    System.out.println("executed tool: " + toolName + " -> " + result);
 
                     // Step 5: feed the observation back in.
                     messages.add(new JSONObject().put("role", "tool").put("content", result));
