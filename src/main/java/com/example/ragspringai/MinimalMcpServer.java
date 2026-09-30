@@ -133,7 +133,7 @@ public class MinimalMcpServer {
                                     .put(new JSONObject()
                                             .put("name", "MigrationNotesSearch")
                                             .put("description", "Searches the Aurora Freight 64-bit migration notes for relevant information.")
-                                            .put("parameters", new JSONObject()
+                                            .put("inputSchema", new JSONObject()
                                                     .put("type", "object")
                                                     .put("properties", new JSONObject()
                                                             .put("query", new JSONObject()
