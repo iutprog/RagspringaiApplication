@@ -83,7 +83,19 @@ public class OllamaAgentLoop {
                                         .put("filePath", new JSONObject()
                                                 .put("type", "string")
                                                 .put("description", "Path to the .cpp file to scan")))
-                                .put("required", new JSONArray().put("filePath")))));
+                                .put("required", new JSONArray().put("filePath")))))
+        .put(new JSONObject()
+                .put("type", "function")
+                .put("function", new JSONObject()
+                        .put("name", "MigrationNotesSearch")
+                        .put("description", "Searches the Aurora Freight 64-bit migration notes for relevant information.")
+                        .put("parameters", new JSONObject()
+                                .put("type", "object")
+                                .put("properties", new JSONObject()
+                                        .put("query", new JSONObject()
+                                                .put("type", "string")
+                                                .put("description", "The search query to find relevant migration notes.")))
+                                .put("required", new JSONArray().put("query")))));
 
         for (int step = 1; step <= MAX_STEPS; step++) {
             System.out.println("--- step " + step + " ---");
