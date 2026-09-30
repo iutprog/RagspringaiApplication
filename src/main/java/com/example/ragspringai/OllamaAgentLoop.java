@@ -59,8 +59,9 @@ public class OllamaAgentLoop {
 
         // Step 1: state. This list is the entire memory of the agent.
         List<Object> messages = new ArrayList<>();
+        // This is the question the agent is trying to answer.
         messages.add(new JSONObject().put("role", "user").put("content",
-                "Scan src/main/resources/data/RouteHandleTable.cpp for suspicious casts and tell me what you find."));
+                "Scan src/main/resources/data/RouteHandleTable.cpp for suspicious casts, then check the migration notes for guidance on handling what you find, and tell me what to do about each one."));
         // The one tool this agent is allowed to use.
         JSONArray tools = new JSONArray()
         .put(new JSONObject()
@@ -137,7 +138,7 @@ public class OllamaAgentLoop {
 
                     // Step 4: YOUR code executes the tool. The model cannot do this itself.
                     String result = callMcpTool(toolName, arguments);
-                    System.out.println("executed tool: " + toolName + " -> " + result);
+                    System.out.println("executed tool: " + toolName + " " + arguments + " -> " + result);
 
                     // Step 5: feed the observation back in.
                     messages.add(new JSONObject().put("role", "tool").put("content", result));
