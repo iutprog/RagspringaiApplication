@@ -61,7 +61,7 @@ public class OllamaAgentLoop {
         List<Object> messages = new ArrayList<>();
         // This is the question the agent is trying to answer.
         messages.add(new JSONObject().put("role", "user").put("content",
-                "Scan src/main/resources/data/RouteHandleTable.cpp for suspicious casts, then check the migration notes for guidance on handling what you find, and tell me what to do about each one."));
+                "Scan src/main/resources/data/TelemetryLogger.cpp for suspicious casts and tell me whether any of them are actually safe."));
         // The one tool this agent is allowed to use.
         JSONArray tools = new JSONArray()
         .put(new JSONObject()
